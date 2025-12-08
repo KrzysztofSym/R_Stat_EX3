@@ -1,0 +1,370 @@
+---
+title: "ADPS 2025Z --- Laboratorium 3"
+author: "Konrad Jędrzejewski, Marek Rupniewski"
+output:
+  html_document: default
+  pdf_document: 
+    latex_engine: xelatex
+  html_notebook: default
+---
+
+```{r, echo=FALSE}
+pdf.options(encoding='ISOLatin2')
+```
+
+# Przykład 1 – test wartości średniej
+
+Wygeneruj 30 liczb będących próbą z rozkładu N(1,4): 
+```{r}
+n = 30; mi = 1; sigma = 2 
+x = rnorm(n, mean = mi, sd = sigma) 
+```
+
+Dla wygenerowanych danych zweryfikuj hipotezę zerową: 
+$$ 
+\begin{aligned}
+H_{\textrm{0}} : \mu = \mu_0, \\ 
+H_{\textrm{1}} : \mu \neq \mu_0,
+\end{aligned}
+$$
+dla $\mu_0 = 1$, przy poziomie istotności $\alpha = 0.05$, przy założeniu, że wariancja rozkładu jest nieznana. 
+ 
+## Nieznana wariancja: 
+```{r}
+mi_0 = 1
+alfa = 0.05
+T = abs(mean(x) - mi_0)*sqrt(n)/sd(x) 
+c = qt(1 - alfa/2, df = n-1) 
+p_val = 2*(1 - pt(T, df = n-1)) 
+```
+Wartość statystyki T = `r round(T,4)`. 
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+## Wykorzystanie funkcji t.test: 
+```{r}
+t.test(x, mu = mi_0, alternative = "two.sided") 
+``` 
+
+Powtórz testy dla innych wartości $\mu_0 = 0, 1.5, 3$.
+
+***
+
+# Przykład 2 – test zgodności Pearsona 
+
+## Kostka symetryczna
+
+Zasymuluj 50 rzutów kostką i sprawdź, czy kostka jest symetryczna. 
+```{r}
+n = 50; x = sample(1:6, n, replace = T) 
+ni_i = as.data.frame(table(factor(x, levels = 1:6)))$Freq 
+p_i = rep(1/6, 6) 
+T = sum((ni_i - n*p_i)^2 / (n*p_i)) 
+r = 6
+alfa = 0.05 
+c = qchisq(1 - alfa, r - 1) 
+p_val = (1 - pchisq(T, r - 1)) 
+```
+Wartość statystyki T = `r round(T,4)`. 
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+### Wykorzystanie funkcji chisq.test: 
+
+```{r}
+chisq.test(ni_i, p = p_i) 
+```
+
+## Kostka niesymetryczna
+
+Powtórz testy w przypadku gdy zakładamy, że kostka nie jest symetryczna a prawdopodobieństwa wyrzucenia kolejnych liczb oczek są równe 1/9, 1/9, 1/9, 2/9, 2/9, 2/9.
+```{r}
+n = 50; x = sample(1:6, n, replace = T) 
+ni_i = as.data.frame(table(factor(x, levels = 1:6)))$Freq 
+p_i = c(1/9, 1/9, 1/9, 2/9, 2/9, 2/9) 
+T = sum((ni_i - n*p_i)^2 / (n*p_i)) 
+r = 6
+alfa = 0.05 
+c = qchisq(1 - alfa, r - 1) 
+p_val = (1 - pchisq(T, r - 1)) 
+```
+
+Wartość statystyki T = `r round(T,4)`. 
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+### Wykorzystanie funkcji chisq.test: 
+
+```{r}
+chisq.test(ni_i, p = p_i) 
+```
+
+***
+
+# Przykład 3 – test Kołmogorowa-Smirnowa 
+ 
+## Dane o rozkładzie jednostajnym
+
+Wygeneruj 100 liczb będących próbą z rozkładu jednostajnego w przedziale od 1 do 4: 
+```{r}
+n = 100; a = 1; b = 4 
+x = runif(n, min = a, max = b) 
+```
+
+Obejrzyj wartosci próbek i ich histogram. 
+```{r}
+plot(x) 
+grid()
+hist(x, breaks = 15)
+grid()
+```
+
+Przeprowadź test Kołmogorowa-Smirnowa dla różnych założeń dotyczących krańców przedziałów: 
+```{r}
+ks.test(x, 'punif', min = a, max = b) 
+ks.test(x, 'punif', min = a - 0.5, max = b - 0.5) 
+ks.test(x, 'punif', min = a - 0.5, max = b + 0.5) 
+```
+ 
+Zweryfikuj hipotezę, że wygenerowane dane pochodzą z rozkładu normalnego o parametrach będących wartością średnią i wariancją z próby: 
+```{r}
+ks.test(x, 'pnorm', mean = mean(x), sd = sd(x))
+```
+
+Sprawdź wynik po zwiększeniu liczby próbek do 500: 
+```{r}
+x = runif(500, min = a, max = b) 
+ks.test(x, 'pnorm', mean = mean(x), sd = sd(x)) 
+```
+
+## Dane o rozkładzie normalnym
+
+Zweryfikuj czy dane z rozkładu normalnego dopasowują się do rozkładu jednostajnego: 
+```{r}
+n = 100; mi = 1; sigma = 2 
+x = rnorm(n, mean = mi, sd = sigma)
+ks.test(x, 'punif', min = mean(x) - sd(x), max = mean(x) + sd(x))
+ks.test(x, 'punif', min = mean(x) - 2*sd(x), max = mean(x) + 2*sd(x)) 
+ks.test(x, 'punif', min = mean(x) - 3*sd(x), max = mean(x) + 3*sd(x)) 
+```
+
+***
+
+# Przykład 4 – testy normalności 
+
+## Dane o rozkładzie normalnym
+ 
+Wygeneruj 200 liczb będących próbą losową z rozkładu N(1,4): 
+```{r}
+n = 200; mi = 1; sigma = 2 
+x = rnorm(n, mean = mi, sd = sigma) 
+```
+
+Korzystając z testu Kołmogorowa-Smirnowa zweryfikuj hipotezę, że dane pochodzą z rozkładu N(1,4): 
+```{r}
+ks.test(x, 'pnorm', mean = 1, sd = 2) 
+```
+
+Korzystając z testu Kołmogorowa-Smirnowa zweryfikuj hipotezę, że dane pochodzą z rozkładu N(0,9): 
+```{r}
+ks.test(x, 'pnorm', mean = 0, sd = 3) 
+```
+
+Korzystając z testu Kołmogorowa-Smirnowa zweryfikuj hipotezę, że dane pochodzą z rozkładu normalnego o parametrach wyestymowanych z próby: 
+```{r}
+ks.test(x, 'pnorm', mean = mean(x), sd = sd(x)) 
+```
+
+Za pomocą testu Shapiro-Wilka zweryfikuj hipotezę, że dane pochodzą z rozkładu normalnego: 
+```{r}
+shapiro.test(x) 
+```
+
+Przeprowadź testy dot. normalności za pomocą innych testów:
+```{r}
+library(moments)
+anscombe.test(x)
+agostino.test(x)
+jarque.test(x)
+```
+
+## Dane o rozkładzie jednostajnym
+
+Wygeneruj 200 liczb będących próbą losową z rozkładu jednostajnego w przedziale od 1 do 4: 
+```{r}
+n = 200; a = 1; b = 4 
+x = runif(n, min = a, max = b) 
+```
+
+Zweryfikuj hipotezę, że dane pochodzą z rozkładu normalnego korzystając z testu Kołmogorowa-Smirnowa: 
+```{r}
+ks.test(x, 'pnorm', mean = mean(x), sd = sd(x))
+
+```
+
+Zweryfikuj hipotezę, że dane pochodzą z rozkładu normalnego korzystając z testu Shapiro-Wilka: 
+```{r}
+shapiro.test(x) 
+```
+Przeprowadź testy dot. normalności za pomocą innych testów:
+```{r}
+anscombe.test(x)
+agostino.test(x)
+jarque.test(x)
+```
+
+***
+
+# Przykład 5 – porównywanie średnich 
+
+## Test przy założeniu równości wariancji w obu próbach
+
+Wygeneruj dwie próby z rozkładów normalnych N(0,1) oraz N(1,1) o licznościach 9 i 12: 
+```{r}
+n_1 = 9; mi_1 = 0; sigma_1 = 1 
+n_2 = 12; mi_2 = 1; sigma_2 = 1 
+x_1 = rnorm(n_1, mean = mi_1, sd = sigma_1) 
+x_2 = rnorm(n_2, mean = mi_2, sd = sigma_2) 
+```
+
+Przy poziomie istotności $\alpha$ = 0.05 zweryfikuj hipotezę o równości średnich przy założeniu tej samej wariancji: 
+```{r}
+mean_1 = mean(x_1); mean_2 = mean(x_2) 
+s2_1 = var(x_1); s2_2 = var(x_2) 
+s2 = ((n_1 -1)*s2_1 + (n_2 -1)*s2_2)/(n_1 + n_2 - 2) 
+alfa = 0.05; c = qt(1 - alfa/2, n_1 + n_2 - 2) 
+T = abs(mean_1 - mean_2) / ( sqrt(s2*( n_1^(-1) + n_2^(-1) ) ) ) 
+p_val = 2*(1 - pt(T, n_1 + n_2 - 2)) 
+```
+Wartość statystyki T = `r round(T,4)`.
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+Wykorzystanie funkcji pakietu R: 
+```{r}
+t.test(x_1, x_2, var.equal = T) 
+```
+
+Powtórz testy dla innych wartości $\mu_2$, np. $\mu_2 = 0, 0.5, 2$.
+
+## Test bez zakładania równości wariancji  
+
+Przeprowadź analogiczne testy bez zakładania równości wariancji 
+```{r}
+s2 = s2_1/n_1 + s2_2/n_2 
+d = (s2^2)/(((s2_1/n_1)^2)/(n_1-1) + ((s2_2/n_2)^2)/((n_2-1))) 
+alfa = 0.05
+c = qt(1 - alfa/2, d) 
+T = abs(mean_1 - mean_2)/sqrt(s2) 
+p_val = 2*(1 - pt(T, d)) 
+```
+Wartość statystyki T = `r round(T,4)`.
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+Wykorzystanie funkcji pakietu R: 
+```{r}
+t.test(x_1, x_2) 
+```
+
+## Test Manna-Whitneya(-Wilcoxona)
+
+Przeprowadź analogiczne testy bez zakładania normalności rozkładów: 
+```{r}
+wilcox.test(x_1, x_2) 
+```
+
+Funkcja gęstości rozkładu Wilcoxona 
+```{r}
+plot(dwilcox(0:108, length(x_1), length(x_2)), type = 'h',
+     xlab = 'x', ylab = 'p(x)', main = 'Funkcja gęstości rozkładu Wilcoxona');
+grid() 
+```
+
+***
+
+# Przykład 6 – test niezależności 
+
+Przeprowadź testy niezależności dla danych zawartych w tabeli kontyngencji xx: 
+```{r}
+x_1 = c(16, 25, 11) 
+x_2 = c(13, 32, 15) 
+x_3 = c(31, 43, 26) 
+xx = cbind(x_1, x_2, x_3) 
+I = 3 
+J = 3 
+n_i = x_1 + x_2 + x_3 
+n_j = c(sum(x_1), sum(x_2), sum(x_3)) 
+N = sum(n_j) 
+```
+
+Obliczenie wartości statystyki decyzyjnej, progu i p-wartości: 
+```{r}
+T = 0 
+for (i in 1:I) { 
+   for (j in 1:J) { 
+      T = T + (N*xx[i,j] - n_i[i]*n_j[j])^2/(N*n_i[i]*n_j[j]) 
+   } 
+} 
+alfa = 0.05 
+c = qchisq(1 - alfa, df = (I - 1)*(J - 1)) 
+p_val = 1 - pchisq(T, df = (I - 1)*(J - 1)) 
+```
+Wartość statystyki T = `r round(T,4)`. 
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+Wykorzystanie funkcji chisq.test: 
+```{r}
+chisq.test(xx) 
+```
+
+Powtórz testy niezależności gdy ostatni element zmiennej x_1 zmienimy z 11 na 41:
+```{r}
+x_1 = c(16, 25, 41) 
+x_2 = c(13, 32, 15) 
+x_3 = c(31, 43, 26) 
+xx = cbind(x_1, x_2, x_3) 
+I = 3 
+J = 3 
+n_i = x_1 + x_2 + x_3 
+n_j = c(sum(x_1), sum(x_2), sum(x_3)) 
+N = sum(n_j) 
+```
+
+Obliczenie wartości statystyki decyzyjnej, progu i p-wartości: 
+```{r}
+T = 0 
+for (i in 1:I) { 
+   for (j in 1:J) { 
+      T = T + (N*xx[i,j] - n_i[i]*n_j[j])^2/(N*n_i[i]*n_j[j]) 
+   } 
+} 
+alfa = 0.05 
+c = qchisq(1 - alfa, df = (I - 1)*(J - 1)) 
+p_val = 1 - pchisq(T, df = (I - 1)*(J - 1)) 
+```
+Wartość statystyki T = `r round(T,4)`.
+
+Wartość krytyczna dla poziomu istotności $\alpha$ = `r alfa` wynosi c = `r round(c,4)`.
+
+p-wartość = `r round(p_val,4)`.
+
+Wykorzystanie funkcji chisq.test: 
+```{r}
+chisq.test(xx) 
+```
+
+***
