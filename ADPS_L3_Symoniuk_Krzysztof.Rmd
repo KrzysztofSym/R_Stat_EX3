@@ -70,9 +70,25 @@ Zweryfikuj przy poziomie istotności $\alpha = 0.05$ czy zamieszczone w niej dan
 
 ## Rozwiązanie
 ```{r}
+ni_i = c(1867,1789,1944,2094,2097,1981,1887,2024,1928,2032,1978,1859)
+dni = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
+n = sum(ni_i)
+p_i = dni / sum(dni); p_i
+
+T = sum((ni_i - n*p_i)^2 / (n*p_i))
+r = length(ni_i)
+alfa = 0.05
+
+c = qchisq(1 - alfa, r - 1)
+p_val = 1 - pchisq(T, r - 1)
+
+T; c; p_val
+
+chisq.test(x = ni_i, p = p_i)
 
 ```
+T > c i p < alfa - odrzucamy H0, sezonowość jest istotna.
 
 ***
 
