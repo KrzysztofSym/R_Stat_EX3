@@ -105,10 +105,49 @@ Dla wybranej spółki notowanej na GPW wczytaj dane ze strony stooq.pl, a nastę
 ## Rozwiązanie
 
 ```{r}
+# https://stooq.pl/q/d/l/?s=kgh&i=d
+Ticket = 'KGH'
+webLink = paste0('https://stooq.pl/q/d/l/?s=', Ticket, '&i=d')
+fileName = paste0(Ticket, '.csv')
+if(!file.exists(fileName)) {
+download.file(webLink, fileName)
+}
+```
+
+```{r}
+df_KGH = read.csv('KGH.csv')
+df_KGH$Data = as.Date(df_KGH$Data)
+df_KGH$Najnizszy_zm = with(df_KGH, c(NA, 100*diff(Najnizszy)/Najnizszy[-length(Najnizszy)]))
+df_KGH_1rok = df_KGH[which(df_KGH$Data >= '2024-12-12' & df_KGH$Data <= Sys.Date()),]
+m = mean(df_KGH_1rok$Najnizszy_zm, na.rm = T)
+s = sd(df_KGH_1rok$Najnizszy_zm, na.rm = T)
+hist(df_KGH_1rok$Najnizszy_zm, breaks = 50, prob = T,
+xlab = 'Zmiana najniższych cen [%]',
+ylab = 'Częstość występowania',
+main = paste('Histogram procentowych zmian kursu', 'KGHM'))
+grid()
+min_c = min(df_KGH_1rok$Najnizszy_zm, na.rm = T)
+max_c = max(df_KGH_1rok$Najnizszy_zm, na.rm = T)
+curve(dnorm(x, mean = m, sd = s), add = TRUE, col = 'red', from = min_c, to = max_c)
 
 ```
 ```{r}
+ni_i_KGH = c(df_KGH_1rok$Najnizszy_zm)
+dni_KGH = rep(1/365, 365)
 
+n_KGH = sum(df_KGH_1rok$Najnizszy_zm)
+p_i_KGH = dni_KGH / sum(dni_KGH)
+
+T = sum((ni_i_KGH - n*p_i_KGH)^2 / (n_KGH*p_i_KGH))
+r = length(ni_i_KGH)
+alfa = 0.05
+
+c = qchisq(1 - alfa, r - 1)
+p_val = 1 - pchisq(T, r - 1)
+
+T; c; p_val
+
+# chisq.test(x = ni_i_KGH, p = p_i_KGH)
 ```
 ```{r}
 
