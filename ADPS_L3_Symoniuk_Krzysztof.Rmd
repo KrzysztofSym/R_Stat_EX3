@@ -132,26 +132,26 @@ curve(dnorm(x, mean = m, sd = s), add = TRUE, col = 'red', from = min_c, to = ma
 
 ```
 ```{r}
-ni_i_KGH = c(df_KGH_1rok$Najnizszy_zm)
-dni_KGH = rep(1/365, 365)
-
-n_KGH = sum(df_KGH_1rok$Najnizszy_zm)
-p_i_KGH = dni_KGH / sum(dni_KGH)
-
-T = sum((ni_i_KGH - n*p_i_KGH)^2 / (n_KGH*p_i_KGH))
-r = length(ni_i_KGH)
-alfa = 0.05
-
-c = qchisq(1 - alfa, r - 1)
-p_val = 1 - pchisq(T, r - 1)
-
-T; c; p_val
-
-# chisq.test(x = ni_i_KGH, p = p_i_KGH)
-```
-```{r}
+# H₀: dane ~ N(μ̂, σ̂)
+# H₁: dane ≠ rozkład normalny
+x = df_KGH_1rok$Najnizszy_zm
+mean(x)
+sd(x)
+length(x)
+#Test Kołmogorowa-Smirnowa (parametry z próby)
+ks.test(x, "pnorm", mean = mean(x), sd = sd(x))
+#Test Shapiro-Wilka
+shapiro.test(x)
+#Test Jarque-Bera
+library(moments)
+jarque.test(x)
+#Test skośności i kurtozy
+agostino.test(x)
+anscombe.test(x)
 
 ```
+
+Przy poziomie istotności α = 0.05 test Shapiro-Wilka oraz test Jarque-Bera dały p-wartości mniejsze od 0.05, co prowadzi do odrzucenia hipotezy zerowej o normalności rozkładu procentowych zmian najniższych cen akcji KGHM w ciągu ostatniego roku. Oznacza to, że rozkład badanych stóp zwrotu istotnie odbiega od rozkładu normalnego.
 
 ***
 
@@ -168,9 +168,39 @@ W pliku lozyska.txt podane są czasy (w milionach cykli) pracy (do momentu uszko
 * **(dla chętnych)** Oszacuj prawdopodobieństwo tego, że łożysko wykonane z pierwszego materiału będzie pracowało dłużej niż łożysko wykonane z materiału drugiego.
 
 ## Rozwiązanie
+```{r}
+dane = read.csv('lozyska.txt')
+x = dane$X.Typ.I.
+y = dane$X.Typ.II.
 
-Tu umieść swoje rozwiązanie
+t.test(x, y, alternative = "two.sided", var.equal = FALSE)
+```
+p-value ≥ 0.05
 
+Brak podstaw do odrzucenia hipotezy zerowej o równości średnich czasów pracy łożysk wykonanych z dwóch różnych materiałów.
+
+```{r}
+wilcox.test(x, y, alternative = "two.sided")
+```
+p-value ≥ 0.05:
+
+Brak podstaw do odrzucenia hipotezy zerowej o braku różnic między czasami pracy łożysk wykonanych z dwóch różnych materiałów.
+
+```{r}
+#Obliczenie prawdopodobieństwa
+test = wilcox.test(x, y, exact = TRUE)
+ 
+P_hat = as.numeric(test$statistic) / (length(x) * length(y))
+P_hat
+
+```
+Na podstawie statystyki testu Manna–Whitneya 
+W=75
+W=75 oszacowano prawdopodobieństwo, że losowo wybrane łożysko wykonane z pierwszego materiału będzie pracowało dłużej niż łożysko wykonane z drugiego materiału. Otrzymano wartość 
+P^(X>Y)=0.75
+P
+^
+(X>Y)=0.75. Oznacza to, że w około 75% przypadków czas pracy łożyska z materiału I jest dłuższy niż czas pracy łożyska z materiału II.
 ***
 
 # Zadanie 5 (1 pkt)
@@ -199,6 +229,22 @@ Korzystając z danych zawartych na stronie pl.fcstats.com zweryfikuj hipotezę o
 
 ## Rozwiązanie
 
-Tu umieść swoje rozwiązanie
+DE 1: 125; 2: 86; 3: 95
+PL 1: 108; 2: 65; 3: 67
+ANG 1: 193; 2: 96; 3: 91
+ESP 1: 194; 2: 95; 3: 91
 
+H0: wynik meczu gospodarzy jest niezależny od kraju (ligi)
+H1: wynik meczu gospodarzy zalez˙y od kraju (ligi)
+
+
+```{r}
+x_DE = c(125, 86, 95)
+x_PL = c(108, 65, 67)
+x_ANG = c(193, 96, 91)
+x_ESP = c(194, 95, 91)
+xx = cbind(x_DE, x_PL, x_ANG, x_ESP)
+chisq.test(xx)
+```
+Wartość p = 0,1116 jest większa od poziomu istotności alfa = 0,05, brak zależności między krajem, w którym rozgrywana jest liga, a wynikiem meczu gospodarzy
 ***
